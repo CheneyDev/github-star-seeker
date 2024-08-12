@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-## Getting Started
+# GitHub Star Seeker
 
-First, run the development server:
+GitHub Star Seeker is an intelligent tool for exploring and rediscovering projects in your starred GitHub repositories. Powered by AI, it helps developers quickly find relevant repositories from their curated collection using natural language queries.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- 🧠 **AI-Powered Search**: Utilizes advanced AI to understand and process your queries.
+- 🎨 **Intuitive Interface**: Clean, modern design for a seamless user experience.
+- 🔗 **GitHub Integration**: Seamlessly connects with your GitHub account.
+- 🚀 **Fast and Efficient**: Quickly sifts through your starred repositories.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- **Frontend**: Next.js, React
+- **Backend**: Node.js
+- **AI**: OpenAI GPT
+- **API**: GitHub API
 
-## Learn More
+## 🚀 Getting Started
 
-To learn more about Next.js, take a look at the following resources:
+### Prerequisites
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Node.js (v14 or later)
+- A GitHub account
+- An OpenAI API key
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### Installation
 
-## Deploy on Vercel
+1. Clone the repository:
+   ```
+   git clone https://github.com/cheneydev/github-star-seeker.git
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. Navigate to the project directory:
+   ```
+   cd github-star-seeker
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+3. Install dependencies:
+   ```
+   npm install
+   ```
+
+4. Create a `.env.local` file in the root directory and add your API keys:
+   ```
+   GITHUB_TOKEN=your_github_token
+   OPENAI_API_KEY=your_openai_api_key
+   ```
+
+5. Start the development server:
+   ```
+   npm run dev
+   ```
+
+6. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+
+## 📘 How to Use
+
+1. Log in with your GitHub account.
+2. Enter a description of the project you're looking for in the search bar.
+3. Hit enter or click the search button.
+4. Browse through the AI-curated list of your starred repositories that match your description.
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check [issues page](https://github.com/cheneydev/github-star-seeker/issues).
+
+## 📄 License
+
+This project is [MIT](https://choosealicense.com/licenses/mit/) licensed.
+
+
+## 🙏 Acknowledgements
+
+- [GitHub API](https://docs.github.com/en/rest)
+- [OpenAI](https://openai.com/)
+- [Next.js](https://nextjs.org/)
+- [React](https://reactjs.org/)
+
+---
+
+⭐️ If you find this project useful, please consider giving it a star on GitHub! ⭐️
