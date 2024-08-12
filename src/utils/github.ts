@@ -64,41 +64,74 @@ export async function searchStarredRepos(
 }
 
 async function analyzeWithGPT(starredRepos: Repo[], description: string) {
-  if (!OPENAI_API_KEY || !OPENAI_BASE_URL) {
-    throw new Error("Missing required environment variables");
-  }
-  const openai = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-    baseURL: OPENAI_BASE_URL,
-  });
-  const prompt = `Given the following list of GitHub repositories and a user's project description, 
-  identify the top 5 most relevant repositories that match the description. 
-  Provide explanations for why each repository was chosen.
-
-  Repositories:
-  ${JSON.stringify(starredRepos)}
-
-  User's project description:
-  ${description}
-
-  Please format your response as a JSON array of objects, where each object contains 
-  'name', 'url', 'description', and 'reason' fields.`;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 2048,
-      temperature: 0.7,
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No content returned from OpenAI");
+    if (!OPENAI_API_KEY || !OPENAI_BASE_URL) {
+      throw new Error("Missing required environment variables");
     }
-    return JSON.parse(content);
-  } catch (error) {
-    console.error("Error calling OpenAI API:", error);
-    throw new Error("Failed to analyze with GPT");
+    const openai = new OpenAI({
+      apiKey: OPENAI_API_KEY,
+      baseURL: OPENAI_BASE_URL,
+    });
+  
+    const prompt = `Given the following list of GitHub repositories and a user's project description, 
+    identify the top 5 most relevant repositories that match the description. 
+    Provide explanations for why each repository was chosen.
+  
+    Repositories:
+    ${JSON.stringify(starredRepos)}
+  
+    User's project description:
+    ${description}`;
+  
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-2024-08-06", // 更新为新模型
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful assistant that analyzes GitHub repositories."
+          },
+          { 
+            role: "user", 
+            content: prompt 
+          }
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "github_repo_analysis",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                matched_repos: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      url: { type: "string" },
+                      description: { type: "string" },
+                      reason: { type: "string" }
+                    },
+                    required: ["name", "url", "description", "reason"],
+                    additionalProperties: false
+                  },
+                }
+              },
+              required: ["matched_repos"],
+              additionalProperties: false
+            }
+          }
+        }
+      });
+  
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("No content returned from OpenAI");
+      }
+      return JSON.parse(content).matched_repos;
+    } catch (error) {
+      console.error("Error calling OpenAI API:", error);
+      throw new Error("Failed to analyze with GPT");
+    }
   }
-}
