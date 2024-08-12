@@ -74,13 +74,10 @@ export default function SearchForm() {
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
                 >
-                  {project.name}
+                  {project.full_name}
                 </a>
               </h3>
               <p className="mt-2">{project.description}</p>
-              <p className="mt-2">
-                <strong>Reason:</strong> {project.reason}
-              </p>
             </div>
           ))}
         </div>
