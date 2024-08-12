@@ -1,12 +1,17 @@
+import Header from '@/components/Header';
+import Hero from '@/components/Hero';
 import SearchForm from '@/components/SearchForm';
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-4 text-center">GitHub Star Search</h1>
-        <SearchForm />
-      </div>
-    </main>
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+      <Header />
+      <main className="container mx-auto px-4 py-12">
+        <Hero />
+        <div className="mt-16">
+          <SearchForm />
+        </div>
+      </main>
+    </div>
   );
 }
