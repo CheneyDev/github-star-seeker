@@ -1,29 +1,73 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+
 export default function Header() {
-    return (
-      <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-black dark:bg-white rounded-md mr-2"></div>
-            <span className="font-bold text-xl text-black dark:text-white">sliidea</span>
-          </div>
-          <nav>
-            <ul className="flex space-x-6">
-              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">Benefits</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">How it works</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">FAQ</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">Upcoming features</a></li>
-              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white">Download</a></li>
-            </ul>
-          </nav>
-          <div className="flex items-center space-x-4">
-            <div className="bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 px-3 py-1 rounded-full text-sm">
-              #3 Product of the Day
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(darkModeMediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+    darkModeMediaQuery.addEventListener('change', handleChange);
+
+    const controlNavbar = () => {
+      if (typeof window !== 'undefined') {
+        if (window.scrollY > lastScrollY) { // if scroll down hide the navbar
+          setIsVisible(false);
+        } else { // if scroll up show the navbar
+          setIsVisible(true);
+        }
+
+        // remember current page location to use in the next move
+        setLastScrollY(window.scrollY);
+      }
+    };
+
+    window.addEventListener('scroll', controlNavbar);
+
+    return () => {
+      darkModeMediaQuery.removeEventListener('change', handleChange);
+      window.removeEventListener('scroll', controlNavbar);
+    };
+  }, [lastScrollY]);
+
+  return (
+    <header className={`
+      fixed top-0 left-0 right-0 transition-transform duration-300
+      ${isVisible ? 'translate-y-0' : '-translate-y-full'}
+    `}>
+      <div className="container mx-auto px-4 py-4">
+        <div className={`
+          px-6 py-3 rounded-full
+          ${isDarkMode ? 'bg-gray-800/70 backdrop-blur-md' : 'bg-white/70 backdrop-blur-md'}
+          shadow-lg transition-all duration-300 ease-in-out
+        `}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41IiBkPSJNMjEuMjUgNy44ODlWNS44MzNhMy4wODMgMy4wODMgMCAwIDAtMy4wODMtMy4wODNoLTMuMDg0bTAgMTguNWgzLjA4NGEzLjA4MyAzLjA4MyAwIDAgMCAzLjA4My0zLjA4M1YxNi4xMW0tMTguNS4wMDF2Mi4wNTZhMy4wODMgMy4wODMgMCAwIDAgMy4wODMgMy4wODNoMy4wODRtMC0xOC41SDUuODMzQTMuMDgzIDMuMDgzIDAgMCAwIDIuNzUgNS44MzNWNy44OW0xMC4xMDktMy41NTdsLTYuNDc2IDguNzZhLjU3LjU3IDAgMCAwLS4wOTguMjI4YS41MTQuNTE0IDAgMCAwIDAgLjI1M2EuNDY1LjQ2NSAwIDAgMCAuMTU1LjE5NmEuNDA4LjQwOCAwIDAgMCAuMjIuMDY1aDQuODk0bC0uNzQyIDUuNzFhLjE3MS4xNzEgMCAwIDAgMCAuMTA1YS4xNjMuMTYzIDAgMCAwIC4wNzMuMDc0YS4xMzkuMTM5IDAgMCAwIC4wOTggMGEuMTI4LjEyOCAwIDAgMCAuMDktLjA1N2w2LjQ3NS04Ljc2YS41NjIuNTYyIDAgMCAwIC4wOTgtLjIzNmEuNDk2LjQ5NiAwIDAgMC0uMTk1LS40NGEuNDA4LjQwOCAwIDAgMC0uMjItLjA2NmgtNC44OTRsLjc0Mi01LjcxYS4xNzEuMTcxIDAgMCAwIDAtLjEwNWEuMTYzLjE2MyAwIDAgMC0uMDc0LS4wNzRhLjEzOS4xMzkgMCAwIDAtLjA5NyAwYS4xMy4xMyAwIDAgMC0uMDUuMDU3Ii8+PC9zdmc+" alt="Logo" className="w-8 h-8" />
+              <span className={`font-bold text-xl ${isDarkMode ? 'text-white' : 'text-black'}`}>Infography</span>
             </div>
-            <button className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200">
-              Use now for free
+            
+            <nav>
+              <ul className="flex space-x-6">
+                <li><a href="#" className={`${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>Affiliates</a></li>
+                <li><a href="#" className={`${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>Changelog</a></li>
+              </ul>
+            </nav>
+            <button className={`
+              px-4 py-2 rounded-full text-white
+              ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#14162e] hover:bg-opacity-90'}
+              transition duration-300
+            `}>
+              Try for free →
             </button>
           </div>
         </div>
-      </header>
-    );
-  }
+      </div>
+    </header>
+  );
+}
