@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import SearchResults from './SearchResults';
 
 export default function SearchForm() {
   const [githubId, setGithubId] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,13 +25,13 @@ export default function SearchForm() {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "API请求失败");
+        throw new Error(data.error || "API request failed");
       }
-      // 处理匹配的项目
+      setSearchResults(data);
       console.log(data);
     } catch (error) {
-      console.error("错误:", error);
-      setError(error instanceof Error ? error.message : "发生未知错误");
+      console.error("Error:", error);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -36,33 +39,34 @@ export default function SearchForm() {
 
   return (
     <div className="max-w-3xl mx-auto mt-8">
-      <form onSubmit={handleSubmit} className="flex space-x-3">
-        <div className="flex-grow flex flex-col space-y-3">
+      <form onSubmit={handleSubmit} className="flex flex-col space-y-3">
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Describe the project you're looking for"
+          className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-base h-24"
+          required
+        />
+        <div className="flex space-x-3">
           <input
             type="text"
             value={githubId}
             onChange={(e) => setGithubId(e.target.value)}
-            placeholder="输入您的GitHub ID或邮箱"
-            className="w-full p-3 border border-gray-200 rounded-t-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-base"
+            placeholder="Enter your GitHub ID or email"
+            className="flex-grow p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-base"
             required
           />
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="描述您正在寻找的项目"
-            className="w-full p-3 border border-gray-200 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-base h-24"
-            required
-          />
+          <button
+            type="submit"
+            className="w-32 bg-[#14162e] text-white rounded-lg transition duration-300 ease-in-out text-base font-semibold hover:bg-[#1c1f3d] disabled:opacity-50"
+            disabled={isLoading}
+          >
+            {isLoading ? "Searching..." : "AI Search"}
+          </button>
         </div>
-        <button
-          type="submit"
-          className="w-32 bg-[#14162e] text-white rounded-lg transition duration-300 ease-in-out text-base font-semibold hover:bg-[#1c1f3d] disabled:opacity-50"
-          disabled={isLoading}
-        >
-          {isLoading ? "搜索中..." : "AI 搜索项目"}
-        </button>
       </form>
       {error && <p className="text-red-500 mt-2">{error}</p>}
+      {searchResults.length > 0 && <SearchResults results={searchResults} />}
     </div>
   );
 }
