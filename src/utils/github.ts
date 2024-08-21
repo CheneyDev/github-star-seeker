@@ -20,7 +20,7 @@ interface SimplifiedRepo {
 }
 
 // 修改getStarredRepos函数以同时返回简化版和完整版的repo数据
-async function getStarredRepos(githubId: string): Promise<[SimplifiedRepo[], Repo[]]> {
+export async function getStarredRepos(githubId: string): Promise<[SimplifiedRepo[], Repo[]]> {
   let page = 1;
   let allSimplifiedRepos: SimplifiedRepo[] = [];
   let allFullRepos: Repo[] = [];
@@ -74,23 +74,22 @@ export async function searchStarredRepos(githubId: string, description: string) 
     console.log("searchStarredRepos: 获取到的仓库数量", simplifiedRepos.length);
 
     console.log("searchStarredRepos: 调用 analyzeWithGPT");
-    const matchedRepoNames = await analyzeWithGPT(simplifiedRepos, description);
+    const matchedRepoNames = await analyzeWithGPT(simplifiedRepos, description, (content) => {
+      console.log("正在分析仓库...", content);
+    });
     console.log("searchStarredRepos: 匹配的仓库名称", matchedRepoNames);
 
     console.log("searchStarredRepos: 调用 getFullRepoInfo");
-    const result = getFullRepoInfo(matchedRepoNames, fullRepos);
-    console.log("searchStarredRepos: 最终结果", result);
-
-    return result;
+    return getFullRepoInfo(matchedRepoNames, fullRepos);
   } catch (error) {
     console.error("searchStarredRepos 错误:", error);
     throw error;
   }
 }
 
-async function analyzeWithGPT(simplifiedRepos: SimplifiedRepo[], description: string) {
+export async function analyzeWithGPT(simplifiedRepos: SimplifiedRepo[], description: string, streamCallback: (content: string) => void) {
   if (!OPENAI_API_KEY || !OPENAI_BASE_URL) {
-    throw new Error("Missing required environment variables");
+    throw new Error("缺少必要的环境变量: OPENAI_API_KEY 或 OPENAI_BASE_URL");
   }
   const openai = new OpenAI({
     apiKey: OPENAI_API_KEY,
@@ -107,7 +106,8 @@ async function analyzeWithGPT(simplifiedRepos: SimplifiedRepo[], description: st
   ${description}`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    console.log("开始调用 OpenAI API");
+    const response = await openai.chat.completions.create({
       model: "gpt-4o-2024-08-06",
       messages: [
         {
@@ -122,35 +122,57 @@ async function analyzeWithGPT(simplifiedRepos: SimplifiedRepo[], description: st
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "github_repo_analysis",
+          name: "repo_analysis",
           strict: true,
           schema: {
             type: "object",
             properties: {
               matched_repos: {
                 type: "array",
-                items: { type: "string" }
+                items: {
+                  type: "string"
+                }
+              },
+              analysis: {
+                type: "string"
               }
             },
-            required: ["matched_repos"],
+            required: ["matched_repos", "analysis"],
             additionalProperties: false
           }
         }
-      }
+      },
+      stream: true,
     });
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No content returned from OpenAI");
+    let fullContent = '';
+    for await (const chunk of response) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      fullContent += content;
+      streamCallback(content);
     }
-    return JSON.parse(content).matched_repos;
+
+    console.log("OpenAI API 返回的完整内容:", fullContent);
+
+    const parsedContent = JSON.parse(fullContent);
+    console.log("解析后的内容:", parsedContent);
+
+    // 流式输出分析结果
+    streamCallback(`\n分析结果：${parsedContent.analysis}\n`);
+
+    return parsedContent.matched_repos;
   } catch (error) {
-    console.error("Error calling OpenAI API:", error);
-    throw new Error("Failed to analyze with GPT");
+    console.error("调用 OpenAI API 时发生错误:", error);
+    throw new Error("无法分析仓库");
   }
 }
 
 // 修改getFullRepoInfo函数，使其能够利用完整版本的repo数据而不是重新从GitHub API获取
-async function getFullRepoInfo(matchedRepoNames: string[], fullRepos: Repo[]): Promise<Repo[]> {
-    return fullRepos.filter(repo => matchedRepoNames.includes(repo.full_name));
+function* getFullRepoInfo(matchedRepoNames: string[], fullRepos: Repo[]): Generator<Repo, void, unknown> {
+  for (const repoName of matchedRepoNames) {
+    const repo = fullRepos.find(r => r.full_name === repoName);
+    if (repo) {
+      yield repo;
+    }
   }
+}

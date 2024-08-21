@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import SearchResults from './SearchResults';
 
 export default function SearchForm() {
@@ -8,13 +8,32 @@ export default function SearchForm() {
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  
+  const [streamedResults, setStreamedResults] = useState<string[]>([]);
+const [finalResults, setFinalResults] = useState<any[]>([]);
+const [gptStream, setGptStream] = useState<string>('');
+  const gptStreamRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (gptStreamRef.current) {
+      gptStreamRef.current.scrollTop = gptStreamRef.current.scrollHeight;
+    }
+  }, [gptStream]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setStreamedResults([]);
+    setFinalResults([]);
+    setGptStream('');
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     try {
       const response = await fetch("/api/search", {
         method: "POST",
@@ -22,16 +41,51 @@ export default function SearchForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ githubId, description }),
+        signal: abortControllerRef.current.signal,
       });
-      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.error || "API request failed");
+        throw new Error("API 请求失败");
       }
-      setSearchResults(data);
-      console.log(data);
-    } catch (error) {
-      console.error("Error:", error);
-      setError(error instanceof Error ? error.message : "An unknown error occurred");
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法读取响应流");
+      }
+
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const data = JSON.parse(line);
+              if (data.type === 'stream') {
+                setStreamedResults(prev => [...prev, data.content]);
+              } else if (data.type === 'gpt_stream') {
+                setGptStream(prev => prev + data.content);
+              } else if (data.type === 'final') {
+                setFinalResults(data.content);
+              }
+            } catch (parseError) {
+              console.error("JSON 解析错误:", parseError);
+            }
+          }
+        }
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('请求被取消');
+      } else {
+        console.error("错误:", error);
+        setError(error instanceof Error ? error.message : "发生未知错误");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +120,30 @@ export default function SearchForm() {
         </div>
       </form>
       {error && <p className="text-red-500 mt-2">{error}</p>}
-      {searchResults.length > 0 && <SearchResults results={searchResults} />}
+      {isLoading && <div className="mt-4 text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        <p className="mt-2">正在搜索中...</p>
+      </div>}
+      {streamedResults.length > 0 && (
+  <div className="mt-4 bg-gray-100 p-4 rounded">
+    <h3 className="font-semibold mb-2">原始数据流：</h3>
+    {streamedResults.map((result, index) => (
+      <pre key={index} className="whitespace-pre-wrap">{result}</pre>
+    ))}
+  </div>
+)}
+{gptStream && (
+  <div className="mt-4 bg-gray-100 p-4 rounded">
+    <h3 className="font-semibold mb-2">GPT 分析流：</h3>
+    <div 
+      ref={gptStreamRef}
+      className="h-64 w-full overflow-auto border border-gray-300 rounded p-2 bg-white hide-scrollbar"
+    >
+      <pre className="whitespace-pre-wrap">{gptStream}</pre>
+    </div>
+  </div>
+)}
+{finalResults.length > 0 && <SearchResults results={finalResults} />}
     </div>
   );
 }
