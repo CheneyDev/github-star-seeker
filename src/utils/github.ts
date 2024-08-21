@@ -61,16 +61,29 @@ async function getStarredRepos(githubId: string): Promise<[SimplifiedRepo[], Rep
 
 // 调整searchStarredRepos函数，以便它使用完整的repo数据
 export async function searchStarredRepos(githubId: string, description: string) {
+  console.log("searchStarredRepos: 开始搜索", { githubId, description });
+  
   if (!GITHUB_TOKEN) {
-    throw new Error("Missing required environment variables");
+    console.error("searchStarredRepos: 缺少 GITHUB_TOKEN");
+    throw new Error("缺少必要的环境变量: GITHUB_TOKEN");
   }
 
   try {
+    console.log("searchStarredRepos: 调用 getStarredRepos");
     const [simplifiedRepos, fullRepos] = await getStarredRepos(githubId);
+    console.log("searchStarredRepos: 获取到的仓库数量", simplifiedRepos.length);
+
+    console.log("searchStarredRepos: 调用 analyzeWithGPT");
     const matchedRepoNames = await analyzeWithGPT(simplifiedRepos, description);
-    return getFullRepoInfo(matchedRepoNames, fullRepos);
+    console.log("searchStarredRepos: 匹配的仓库名称", matchedRepoNames);
+
+    console.log("searchStarredRepos: 调用 getFullRepoInfo");
+    const result = getFullRepoInfo(matchedRepoNames, fullRepos);
+    console.log("searchStarredRepos: 最终结果", result);
+
+    return result;
   } catch (error) {
-    console.error("Error in searchStarredRepos:", error);
+    console.error("searchStarredRepos 错误:", error);
     throw error;
   }
 }

@@ -5,12 +5,13 @@ import { useState } from "react";
 export default function SearchForm() {
   const [githubId, setGithubId] = useState("");
   const [description, setDescription] = useState("");
-  const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
     try {
       const response = await fetch("/api/search", {
         method: "POST",
@@ -19,78 +20,49 @@ export default function SearchForm() {
         },
         body: JSON.stringify({ githubId, description }),
       });
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("API request failed");
+        throw new Error(data.error || "API请求失败");
       }
-      const matchedProjects = await response.json();
-      setResults(matchedProjects);
+      // 处理匹配的项目
+      console.log(data);
     } catch (error) {
-      console.error("Error:", error);
-      alert("An error occurred. Please try again.");
+      console.error("错误:", error);
+      setError(error instanceof Error ? error.message : "发生未知错误");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-colors duration-300">
-      <div className="p-8">
-        <h2 className="text-2xl font-bold mb-6 text-center text-black dark:text-white">Search GitHub Projects</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <input
-              type="text"
-              value={githubId}
-              onChange={(e) => setGithubId(e.target.value)}
-              placeholder="Enter your GitHub ID or Email"
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-black dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the project you're looking for"
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-black dark:text-white h-32"
-              required
-            />
-          </div>
-          <div>
-            <button
-              type="submit"
-              className="w-full p-3 bg-black dark:bg-white text-white dark:text-black rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 transition duration-300 ease-in-out"
-              disabled={isLoading}
-            >
-              {isLoading ? "Searching..." : "Search Projects"}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {results.length > 0 && (
-        <div className="bg-gray-100 dark:bg-gray-700 p-8">
-          <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">Results:</h2>
-          {results.map((project: any, index: number) => (
-            <div
-              key={index}
-              className="mb-4 p-4 bg-white dark:bg-gray-600 rounded-md shadow"
-            >
-              <h3 className="text-xl font-bold">
-                <a
-                  href={project.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  {project.full_name}
-                </a>
-              </h3>
-              <p className="mt-2 text-gray-600 dark:text-gray-300">{project.description}</p>
-            </div>
-          ))}
+    <div className="max-w-3xl mx-auto mt-8">
+      <form onSubmit={handleSubmit} className="flex space-x-3">
+        <div className="flex-grow flex flex-col space-y-3">
+          <input
+            type="text"
+            value={githubId}
+            onChange={(e) => setGithubId(e.target.value)}
+            placeholder="输入您的GitHub ID或邮箱"
+            className="w-full p-3 border border-gray-200 rounded-t-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-base"
+            required
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="描述您正在寻找的项目"
+            className="w-full p-3 border border-gray-200 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-base h-24"
+            required
+          />
         </div>
-      )}
+        <button
+          type="submit"
+          className="w-32 bg-[#14162e] text-white rounded-lg transition duration-300 ease-in-out text-base font-semibold hover:bg-[#1c1f3d] disabled:opacity-50"
+          disabled={isLoading}
+        >
+          {isLoading ? "搜索中..." : "AI 搜索项目"}
+        </button>
+      </form>
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
   );
 }
